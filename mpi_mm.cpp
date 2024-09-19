@@ -164,7 +164,7 @@ MPI_Comm_split(MPI_COMM_WORLD, color, taskid, &worker_comm);
       MPI_Recv(&a, rows*sizeOfMatrix, MPI_DOUBLE, MASTER, mtype, MPI_COMM_WORLD, &status);
       MPI_Recv(&b, sizeOfMatrix*sizeOfMatrix, MPI_DOUBLE, MASTER, mtype, MPI_COMM_WORLD, &status);
       end_time = MPI_Wtime();
-      worker_receive_time = end_time - start_time();
+      worker_receive_time = end_time - start_time;
       //RECEIVING PART FOR WORKER PROCESS ENDS HERE
       
 
@@ -210,12 +210,12 @@ MPI_Comm_split(MPI_COMM_WORLD, color, taskid, &worker_comm);
 
    double worker_receive_time_max,
       worker_receive_time_min,
-      worker_receive_time_sum,
+      worker_receive_time_max,
       worker_recieve_time_average,
-      worker_calculation_time_max,
+      worker_receive_time_max,
       worker_calculation_time_min,
       worker_calculation_time_sum,
-      worker_calculation_time_average,
+      worker_receive_time_max,
       worker_send_time_max,
       worker_send_time_min,
       worker_send_time_sum,
@@ -223,17 +223,17 @@ MPI_Comm_split(MPI_COMM_WORLD, color, taskid, &worker_comm);
 
    /* USE MPI_Reduce here to calculate the minimum, maximum and the average times for the worker processes.
    MPI_Reduce (&sendbuf,&recvbuf,count,datatype,op,root,comm). https://hpc-tutorials.llnl.gov/mpi/collective_communication_routines/ */
-   MPI_Reduce(&worker_receive_time, &min_receive_time, 1, MPI_DOUBLE, MPI_MIN, MASTER, worker_comm);
-   MPI_Reduce(&worker_receive_time, &max_receive_time, 1, MPI_DOUBLE, MPI_MAX, MASTER, worker_comm);
-   MPI_Reduce(&worker_receive_time, &total_receive_time, 1, MPI_DOUBLE, MPI_SUM, MASTER, worker_comm);
+   MPI_Reduce(&worker_receive_time, &worker_receive_time_min, 1, MPI_DOUBLE, MPI_MIN, MASTER, worker_comm);
+   MPI_Reduce(&worker_receive_time, &worker_receive_time_max, 1, MPI_DOUBLE, MPI_MAX, MASTER, worker_comm);
+   MPI_Reduce(&worker_receive_time, &worker_receive_time_sum, 1, MPI_DOUBLE, MPI_SUM, MASTER, worker_comm);
 
-   MPI_Reduce(&worker_calculation_time, &min_calc_time, 1, MPI_DOUBLE, MPI_MIN, MASTER, worker_comm);
-   MPI_Reduce(&worker_calculation_time, &max_calc_time, 1, MPI_DOUBLE, MPI_MAX, MASTER, worker_comm);
-   MPI_Reduce(&worker_calculation_time, &total_calc_time, 1, MPI_DOUBLE, MPI_SUM, MASTER, worker_comm);
+   MPI_Reduce(&worker_calculation_time, &worker_calculation_time_min, 1, MPI_DOUBLE, MPI_MIN, MASTER, worker_comm);
+   MPI_Reduce(&worker_calculation_time, &worker_receive_time_max, 1, MPI_DOUBLE, MPI_MAX, MASTER, worker_comm);
+   MPI_Reduce(&worker_calculation_time, &worker_calculation_time_sum, 1, MPI_DOUBLE, MPI_SUM, MASTER, worker_comm);
 
-   MPI_Reduce(&worker_send_time, &min_send_time, 1, MPI_DOUBLE, MPI_MIN, MASTER, worker_comm);
-   MPI_Reduce(&worker_send_time, &max_send_time, 1, MPI_DOUBLE, MPI_MAX, MASTER, worker_comm);
-   MPI_Reduce(&worker_send_time, &total_send_time, 1, MPI_DOUBLE, MPI_SUM, MASTER, worker_comm);
+   MPI_Reduce(&worker_send_time, &worker_send_time_min, 1, MPI_DOUBLE, MPI_MIN, MASTER, worker_comm);
+   MPI_Reduce(&worker_send_time, &worker_send_time_max, 1, MPI_DOUBLE, MPI_MAX, MASTER, worker_comm);
+   MPI_Reduce(&worker_send_time, &worker_send_time_sum, 1, MPI_DOUBLE, MPI_SUM, MASTER, worker_comm);
 
    if (taskid == 0)
    {
