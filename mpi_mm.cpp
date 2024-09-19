@@ -152,7 +152,7 @@ numworkers = numtasks-1;
 
 
 /**************************** worker task ************************************/
-   if (taskid > MASTER && worker_comm != MPI_COMM_NULL)
+   if (taskid > MASTER)
    {
       //RECEIVING PART FOR WORKER PROCESS STARTS HERE
       start_time = MPI_Wtime();
