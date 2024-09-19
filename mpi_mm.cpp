@@ -188,7 +188,7 @@ numworkers = numtasks-1;
       MPI_Send(&offset, 1, MPI_INT, MASTER, mtype, MPI_COMM_WORLD);
       MPI_Send(&rows, 1, MPI_INT, MASTER, mtype, MPI_COMM_WORLD);
       MPI_Send(&c, rows*sizeOfMatrix, MPI_DOUBLE, MASTER, mtype, MPI_COMM_WORLD);
-      start_time = MPI_Wtime();
+      end_time = MPI_Wtime();
       worker_send_time = end_time - start_time;
       //SENDING PART FOR WORKER PROCESS ENDS HERE
    }
