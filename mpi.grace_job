@@ -4,7 +4,7 @@
 #SBATCH --get-user-env=L         #Replicate login environment
 #
 ##NECESSARY JOB SPECIFICATIONS
-#SBATCH --job-name=4-128       #Set the job name to "JobName"
+#SBATCH --job-name=32-128       #Set the job name to "JobName"
 #SBATCH --time=1:00:00           #Set the wall clock limit
 #SBATCH --nodes=1               #Request nodes
 #SBATCH --ntasks-per-node=48      #Request 4 tasks/cores per node
