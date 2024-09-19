@@ -56,6 +56,7 @@ double worker_receive_time,       /* Buffer for worker recieve times */
 double whole_computation_time,    /* Buffer for whole computation time */
    master_initialization_time,   /* Buffer for master initialization time */
    master_send_receive_time = 0; /* Buffer for master send and receive time */
+double start_time, end_time = 0;
 
 MPI_Init(&argc,&argv);
 MPI_Comm_rank(MPI_COMM_WORLD,&taskid);
@@ -68,17 +69,23 @@ if (numtasks < 2 ) {
   }
 numworkers = numtasks-1;
 
+// start worker comm
+MPI_Comm worker_comm;
+int color = (taskid == MASTER) ? MPI_UNDEFINED : 0;
+MPI_Comm_split(MPI_COMM_WORLD, color, taskid, &worker_comm);
+// end worker comm
+
 // WHOLE PROGRAM COMPUTATION PART STARTS HERE
 
 /**************************** master task ************************************/
    if (taskid == MASTER)
    {
       // INITIALIZATION PART FOR THE MASTER PROCESS STARTS HERE
+      start_time = MPI_Wtime();
 
       printf("mpi_mm has started with %d tasks.\n",numtasks);
       printf("Initializing arrays...\n");
 
-      double master_init_start = MPI_Wtime();
 
       for (i=0; i<sizeOfMatrix; i++)
          for (j=0; j<sizeOfMatrix; j++)
@@ -86,11 +93,15 @@ numworkers = numtasks-1;
       for (i=0; i<sizeOfMatrix; i++)
          for (j=0; j<sizeOfMatrix; j++)
             b[i][j]= i*j;
+
+      end_time = MPI_Wtime();
+      master_initialization_time = end_time - start_time;
       
       //INITIALIZATION PART FOR THE MASTER PROCESS ENDS HERE
       
       
       //SEND-RECEIVE PART FOR THE MASTER PROCESS STARTS HERE
+      start_time = MPI_Wtime();
 
       /* Send matrix data to the worker tasks */
       averow = sizeOfMatrix/numworkers;
@@ -120,6 +131,9 @@ numworkers = numtasks-1;
                   MPI_COMM_WORLD, &status);
          printf("Received results from task %d\n",source);
       }
+      end_time = MPI_Wtime();
+      master_send_receive_time = end_time - start_time;
+      whole_computation_time = master_initialization_time + master_send_receive_time;
       
       //SEND-RECEIVE PART FOR THE MASTER PROCESS ENDS HERE
 
@@ -140,21 +154,23 @@ numworkers = numtasks-1;
 
 
 /**************************** worker task ************************************/
-   if (taskid > MASTER)
+   if (taskid > MASTER && worker_comm != MPI_COMM_NULL)
    {
       //RECEIVING PART FOR WORKER PROCESS STARTS HERE
-
+      start_time = MPI_Wtime();
       mtype = FROM_MASTER;
       MPI_Recv(&offset, 1, MPI_INT, MASTER, mtype, MPI_COMM_WORLD, &status);
       MPI_Recv(&rows, 1, MPI_INT, MASTER, mtype, MPI_COMM_WORLD, &status);
       MPI_Recv(&a, rows*sizeOfMatrix, MPI_DOUBLE, MASTER, mtype, MPI_COMM_WORLD, &status);
       MPI_Recv(&b, sizeOfMatrix*sizeOfMatrix, MPI_DOUBLE, MASTER, mtype, MPI_COMM_WORLD, &status);
-      
+      end_time = MPI_Wtime();
+      worker_receive_time = end_time - start_time();
       //RECEIVING PART FOR WORKER PROCESS ENDS HERE
       
 
       //CALCULATION PART FOR WORKER PROCESS STARTS HERE
 
+      start_time = MPI_Wtime();
       for (k=0; k<sizeOfMatrix; k++)
          for (i=0; i<rows; i++)
          {
@@ -162,17 +178,20 @@ numworkers = numtasks-1;
             for (j=0; j<sizeOfMatrix; j++)
                c[i][k] = c[i][k] + a[i][j] * b[j][k];
          }
+      end_time = MPI_Wtime();
+      worker_calculation_time = end_time - start_time;
 
       //CALCULATION PART FOR WORKER PROCESS ENDS HERE
       
       
       //SENDING PART FOR WORKER PROCESS STARTS HERE
-
+      start_time = MPI_Wtime();
       mtype = FROM_WORKER;
       MPI_Send(&offset, 1, MPI_INT, MASTER, mtype, MPI_COMM_WORLD);
       MPI_Send(&rows, 1, MPI_INT, MASTER, mtype, MPI_COMM_WORLD);
       MPI_Send(&c, rows*sizeOfMatrix, MPI_DOUBLE, MASTER, mtype, MPI_COMM_WORLD);
-
+      start_time = MPI_Wtime();
+      worker_send_time = end_time - start_time;
       //SENDING PART FOR WORKER PROCESS ENDS HERE
    }
 
@@ -204,7 +223,17 @@ numworkers = numtasks-1;
 
    /* USE MPI_Reduce here to calculate the minimum, maximum and the average times for the worker processes.
    MPI_Reduce (&sendbuf,&recvbuf,count,datatype,op,root,comm). https://hpc-tutorials.llnl.gov/mpi/collective_communication_routines/ */
+   MPI_Reduce(&worker_receive_time, &min_receive_time, 1, MPI_DOUBLE, MPI_MIN, MASTER, worker_comm);
+   MPI_Reduce(&worker_receive_time, &max_receive_time, 1, MPI_DOUBLE, MPI_MAX, MASTER, worker_comm);
+   MPI_Reduce(&worker_receive_time, &total_receive_time, 1, MPI_DOUBLE, MPI_SUM, MASTER, worker_comm);
 
+   MPI_Reduce(&worker_calculation_time, &min_calc_time, 1, MPI_DOUBLE, MPI_MIN, MASTER, worker_comm);
+   MPI_Reduce(&worker_calculation_time, &max_calc_time, 1, MPI_DOUBLE, MPI_MAX, MASTER, worker_comm);
+   MPI_Reduce(&worker_calculation_time, &total_calc_time, 1, MPI_DOUBLE, MPI_SUM, MASTER, worker_comm);
+
+   MPI_Reduce(&worker_send_time, &min_send_time, 1, MPI_DOUBLE, MPI_MIN, MASTER, worker_comm);
+   MPI_Reduce(&worker_send_time, &max_send_time, 1, MPI_DOUBLE, MPI_MAX, MASTER, worker_comm);
+   MPI_Reduce(&worker_send_time, &total_send_time, 1, MPI_DOUBLE, MPI_SUM, MASTER, worker_comm);
 
    if (taskid == 0)
    {
