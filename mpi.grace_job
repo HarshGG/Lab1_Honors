@@ -4,7 +4,7 @@
 #SBATCH --get-user-env=L         #Replicate login environment
 #
 ##NECESSARY JOB SPECIFICATIONS
-#SBATCH --job-name=JobName       #Set the job name to "JobName"
+#SBATCH --job-name=4-32       #Set the job name to "JobName"
 #SBATCH --time=1:00:00           #Set the wall clock limit
 #SBATCH --nodes=16               #Request nodes
 #SBATCH --ntasks-per-node=4      #Request 4 tasks/cores per node
@@ -17,8 +17,8 @@
 #
 ##First Executable Line
 #
-matrix_size=$1
-processes=$2
+matrix_size=$128
+processes=$32
 
 module load intel/2020b       # load Intel software stack
 module load CMake/3.12.1
